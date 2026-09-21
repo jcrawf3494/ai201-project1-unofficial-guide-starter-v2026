@@ -23,7 +23,7 @@ For at least 4 of my 5 test questions, the retrieved chunks include one that
 contains the answer.
 
 **Why this target:**
- This gives the ai a keyword to look for which helps add some determinism in the response and prevents the ai from hallucinating and answer. 
+ This gives the ai a keyword to look for which helps add some determinism in the response and prevents the ai from hallucinating and answer. And setting a testing boundary is what is important. So 4/5 but you could also change it to a more stict like 5/5 for where accuracy is more important. Like in a medical situation where doctors are looking up information about a disease. 
 
 ---
 
