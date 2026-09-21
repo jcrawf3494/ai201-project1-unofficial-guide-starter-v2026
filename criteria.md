@@ -23,8 +23,7 @@ For at least 4 of my 5 test questions, the retrieved chunks include one that
 contains the answer.
 
 **Why this target:**
-<!-- e.g. "One of my questions is about a topic only two documents mention, so
-     I expect that one to be hard." -->
+ This gives the ai a keyword to look for which helps add some determinism in the response and prevents the ai from hallucinating and answer. 
 
 ---
 
@@ -33,8 +32,7 @@ contains the answer.
 Every answer the system produces names at least one source document.
 
 **Why this target:**
-<!-- Why all five and not four? What about your setup makes that achievable —
-     or what would have to go wrong for it not to be? -->
+Same as above allows the user to verify the answer and prevents the AI from hallucinating and answer. 
 
 ---
 
@@ -56,6 +54,8 @@ in at least 4 of 5 tries.
 ---
 
 ## 4. Something about your chunks
+The context needs to be associated with every chunck. so make sure to attach the thread it is replied to. 
+
 
 <!-- YOU WRITE THIS ONE.
 
@@ -72,12 +72,14 @@ in at least 4 of 5 tries.
 
 
 **Why this target:**
-
+This target is done because if the chunks are not associate the model could confuse the context and give an incorrect answer. For example talking about late work and being late for registration could cause two different answers. But the model could find late in both of the responses 
 
 
 ---
 
 ## 5. Your choice
+
+If there is a conflicting answer. For example one says it is okay to submit late work and one answer says it is not okay to submit late work give precedence to the one with a higher vote count. But mention that there is a conflicting answer with a lower count. 
 
 <!-- YOU WRITE THIS ONE TOO.
 
@@ -90,7 +92,7 @@ in at least 4 of 5 tries.
 
 
 **Why this target:**
-
+This is important because most of these answers are submitted by students and some classes or students have different thoughts or opinions. So the one with the most votes should be the one that is most correct, but it still is worth a mention to say the other one. 
 
 
 ---

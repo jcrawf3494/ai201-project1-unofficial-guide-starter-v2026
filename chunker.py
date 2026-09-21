@@ -22,10 +22,40 @@ to it, write down what you saw, and move on. That's a real observation about
 your pipeline, not giving up.
 """
 
+import re
 from dataclasses import dataclass
 
 import config
 from ingest import Document
+
+# --- advice_threads format --------------------------------------------------
+# Documents in this corpus look like:
+#
+#   THREAD: How many clubs is too many?
+#
+#   --- reply 1 (31 votes) ---
+#   Two you actually turn up to beats six you signed up for at the fair.
+#
+#   --- reply 2 (24 votes) ---
+#   The club fair collects about four hundred email addresses per society [...]
+#
+# One reply is one answer to the thread's question, so one reply is one chunk.
+
+MIN_CHUNK_CHARS = 50
+
+_THREAD_TITLE_RE = re.compile(r"^[ \t]*THREAD[ \t]*:[ \t]*(.*?)[ \t]*$", re.IGNORECASE)
+
+# Matches "--- reply 1 (31 votes) ---" and the sloppier variants of it:
+# any run of dashes, optional "#", any number of votes (including 0 or a
+# signed count), "vote" or "votes", and whatever spacing crept in.
+_REPLY_HEADER_RE = re.compile(
+    r"""^[ \t]*-{2,}[ \t]*                      # opening dashes
+        reply[ \t]*\#?[ \t]*(\d+)[ \t]*         # "reply 1", "reply #1"
+        \([ \t]*([+-]?\d+)[ \t]*votes?[ \t]*\)  # "(31 votes)"
+        [ \t]*-{2,}[ \t]*$                      # closing dashes
+    """,
+    re.IGNORECASE | re.MULTILINE | re.VERBOSE,
+)
 
 
 @dataclass
@@ -80,24 +110,99 @@ def fallback_split(
     return chunks
 
 
+def _parse_preamble(preamble: str) -> tuple[str, str]:
+    """
+    Pull the thread title out of everything before the first reply.
+
+    Returns (title, opening_text). `opening_text` is whatever else sat above
+    the first reply — usually nothing, occasionally the original poster's
+    question spelled out over a few lines.
+    """
+    title = ""
+    rest: list[str] = []
+
+    for line in preamble.splitlines():
+        match = _THREAD_TITLE_RE.match(line)
+        if match and not title:
+            title = match.group(1).strip()
+        else:
+            rest.append(line)
+
+    return title, "\n".join(rest).strip()
+
+
+def _format_chunk(title: str, number: str | None, votes: str | None, body: str) -> str:
+    """
+    One reply, carrying the context it needs to make sense on its own.
+
+    A reply retrieved without its thread title is close to useless — "two you
+    actually turn up to" only answers a question if the question travels with
+    it. The vote count rides along as a rough quality signal.
+    """
+    header: list[str] = []
+    if title:
+        header.append(f"Thread: {title}")
+    if number is not None:
+        header.append(f"Reply {number} ({votes} votes)")
+
+    return "\n".join([*header, body]) if header else body
+
+
+def _thread_chunks(text: str) -> list[str]:
+    """Split one advice_threads document into reply-sized chunk texts."""
+    # split() with two capture groups gives:
+    #   [preamble, number, votes, body, number, votes, body, ...]
+    parts = _REPLY_HEADER_RE.split(text)
+    title, opening = _parse_preamble(parts[0])
+
+    pieces: list[str] = []
+
+    # The original post, when the thread has one above the first reply.
+    if len(opening) >= MIN_CHUNK_CHARS:
+        pieces.append(_format_chunk(title, None, None, opening))
+
+    for number, votes, body in zip(parts[1::3], parts[2::3], parts[3::3]):
+        body = body.strip()
+        # Drop the stubs — "^", "ditto", a stray bullet. They retrieve noise.
+        if len(body) < MIN_CHUNK_CHARS:
+            continue
+        pieces.append(_format_chunk(title, number, votes, body))
+
+    return pieces
+
+
 def split_documents(documents: list[Document]) -> list[Chunk]:
     """
-    Split documents into chunks. ⚠️ REPLACE THE BODY OF THIS IN MILESTONE 3.
+    Split advice_threads documents on their reply delimiters.
 
-    Right now it just calls the fallback. That is the plain, generic behaviour
-    the brief is talking about.
+    Milestone 3 strategy: these documents are not prose, they are threads. Each
+    "--- reply N (V votes) ---" block is one person answering one question, so
+    the delimiter is the natural chunk boundary — no character window gets it
+    this right, and a fixed window either leaves whole threads unsplit or cuts
+    replies in half.
 
-    When you write your own strategy, set `produced_by` to
-    "chunker.py::split_documents" so your README's Sample Chunks section names
-    the right function. `app.py chunks` prints that string for you.
+    Each chunk gets the thread title and vote count prepended, so a retrieved
+    reply still carries the question it was answering. Replies shorter than
+    MIN_CHUNK_CHARS are discarded rather than indexed.
 
-    Things worth thinking about before you write any code:
-      - Are your documents short posts or long guides?
-      - Is the useful information in one sentence, or spread over a paragraph?
-      - Would splitting on paragraph breaks keep more thoughts intact than
-        splitting on a character count?
+    This never calls `fallback_split` — a document with no reply delimiters is
+    kept whole (still subject to the length check) instead of silently
+    dropping back to fixed-size windows.
     """
-    return fallback_split(documents)
+    chunks: list[Chunk] = []
+
+    for doc in documents:
+        for index, text in enumerate(_thread_chunks(doc.text)):
+            chunks.append(
+                Chunk(
+                    text=text,
+                    source=doc.source,
+                    index=index,
+                    produced_by="chunker.py::split_documents",
+                )
+            )
+
+    return chunks
 
 
 def describe(chunks: list[Chunk]) -> str:
