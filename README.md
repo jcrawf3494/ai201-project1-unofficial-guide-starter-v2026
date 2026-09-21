@@ -20,38 +20,17 @@
 # Unit 1
 
 ## What This Does
-
-<!-- Three or four sentences. Which corpus you picked, and the kinds of
-     questions your system answers. Write it for someone who has never seen
-     this repo.
-
-     Milestone 5. -->
+I chose advice_threads because I believe it has some very real world applications. Especially when training new models for AI. While that is out of scope of this class I think it would be interesting to learn how to decide which response is better than others. So the end goal of this app will be able to get a working rag system that stays within scope of the answer but also gives the most correct answer that is available. 
 
 ## Chunking Strategy
 
 **Chunk size:**
 **Overlap:**
 
-<!-- What about YOUR documents made you pick these numbers? Short posts and
-     long sectioned guides don't want the same chunking, and "800 seemed
-     reasonable" earns nothing. Point at something you noticed when you read
-     the documents in Milestone 1.
-
-     If you changed your mind partway through, say so and say why. That's worth
-     more than pretending you got it right first time.
-
-     Milestone 3. -->
+I spent some time working with Gemini in a separate chat to determine the best chunk size and it really came down to most of the answers are not super long but it does require the context of the "thread" to answer correctly. For example if there was a question about being late for class or being late for registration the answers would be different but if we didnt keep that context alive with the thread headers then it could get lost and the model could give a "correct" answer via chunk logic but it would be incorrect logically. So this helps provide a more deterministic outcome. 
 
 ## Sample Chunks
 
-<!-- Five chunks, pasted as text. Label each one and name the file it came from
-     AND the function that produced it — the grader checks your code against
-     what you claim here.
-
-     `python app.py chunks -n 5` prints all three for you. Copy them straight
-     across.
-
-     Milestone 3. -->
 
 Paste these into your README under Sample Chunks. The rubric asks
 for the source file and the function that produced them — both are
@@ -96,45 +75,42 @@ The library being open until 2am is a trap. It's a resource, not a schedule.
 
 ## Sample Answer
 
-<!-- One complete question and answer, pasted as text, with the source line
-     visible. Milestone 4. -->
+
 
 **Question:**
 
-**Answer:**
+"Are bikes good for campus?"
+  (best distance 0.398, cutoff 0.6)
 
-```
-```
+Bikes can cut an 18-minute walk down to about 6 minutes, but storage is an issue because covered bike parking fills up by 9:00 AM, and salt from winter paths can destroy a drivetrain in a single season. (Source: thread_bike_commute.txt)
 
-**My relevance cutoff:**
+Sources retrieved: thread_bike_commute.txt, thread_commuting.txt, thread_first_gen.txt, thread_laptop_specs.txt, thread_study_spots.txt
 
-<!-- The number you set in config.py, and how you got there.
+.625 seems to be a good cutoff it is a little long for most but it covers even for the responses that are long. 
 
-     You ran five questions your corpus covers and the five in OUT_OF_SCOPE
-     that it clearly doesn't, and wrote down the best distance for each. What
-     did those two groups look like? Where was the gap? Put the actual numbers
-     here — the table below wants all ten rows.
-
-     Milestone 4. -->
 
 | Question | In corpus? | Best distance |
 |---|---|---|
-|  |  |  |
+| Are bikes a good idea on campus? | Yes | 0.386 |
+| Can I submit work late? | Yes | 0.585 |
+| Best quiet place to study? | Yes | 0.371 |
+| What is the best parking spot or area? | Yes | 0.511 |
+| Where can I find information about internships? | Yes | 0.537 |
+| What is the capital of Mongolia? | No | 0.890 |
+| How do I change the oil in a diesel engine? | No | 0.930 |
+| Who won the 1994 World Cup? | No | 0.787 |
+| What is the recommended dosage of ibuprofen for a headache? | No | 0.828 |
+| How do I write a for loop in Rust? | No | 0.871 |
+
 
 ## How I Used AI
 
-<!-- Two specific moments. For each: what you asked for, what came back, and
-     what you changed about it.
-
-     "I asked Claude to write the chunking function from my notes. It ignored
-     the overlap, so I added that myself" is the level of detail we're after.
-     "I used AI to help me code" is not.
-
-     Milestone 5. -->
 
 **1.**
+I used Ai to help create a test for in corpus and out of corpus questions. This was needed so I did not have to type and format with 10 different questions. I liked the way it worked so I left it. 
 
 **2.**
+I also used AI to help create the chunking pattern I planned with it and gave it some context and the rules that I wanted to keep and then it gave me a prompt to give to claude to be able to build a more effective chunker.py. It took a few prompts to create a final prompt I was happy with .
 
 <!-- ── Stretch features ─────────────────────────────────────────────────────
      Doing one? Say so here BEFORE you start. A feature this README never
