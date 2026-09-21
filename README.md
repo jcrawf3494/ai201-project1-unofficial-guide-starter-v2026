@@ -116,7 +116,8 @@ I also used AI to help create the chunking pattern I planned with it and gave it
      Doing one? Say so here BEFORE you start. A feature this README never
      claims earns nothing.
      ───────────────────────────────────────────────────────────────────────── -->
-
+Stretch Features
+1. I added an additional testing file. testing_corpus.py that can be updated and ran to test the corpus without having to do it all more than once. 
 ---
 
 # Unit 2
