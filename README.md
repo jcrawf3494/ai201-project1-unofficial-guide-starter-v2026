@@ -207,11 +207,13 @@ I left my criteria as is but updated the questions.py because I think they were 
 
 I changed the question for 5 to be more relevant as the question I chose was not directly answered at all in the text. I also changed the expected for question 1. 
 
+ {"question": "Are bikes a good idea on campus?", "expects": "bike"},
+
+{"question": "What is the best time to look for an internship?", "expects": "earlier"},
+
 **Why I picked it:**
 
-<!-- Connect it to a specific diagnosis above in one sentence. If you can't,
-     you picked a fix because it sounded impressive. -->
-
+I changed it because I feel like my critera was not testing correctly with the way the questions were written as is. I did not re write the questions so that they could pass the criteria but rather so that the criteria would be relevant. Because question 5 was going to fail everytime no matter what the criteria was because it was a bad question and question 1 was too strict and would risk the quality of the app if I kept it as is. 
 ### Run Log — After
 
 <!-- Same format, same five criteria, three runs each.
@@ -219,34 +221,22 @@ I changed the question for 5 to be more relevant as the question I chose was not
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4 of 5 |  4/5|4/5|3/5 |Missed  |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5| 5/5 | Met  |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | Met  |
+| 4. Reply chunks keep their thread context |4 of 5  |5/5 | 5/5| 5/5| Met
+| 5. Conflicts defer to vote count, but get flagged | 4 of 5| 0|0 |0 | Missed
+
+
 
 **Did it help?**
 
-<!-- Say plainly whether it did, and how you know. If it made things worse,
-     say that — a change that backfired, honestly reported, earns full credit
-     and is more interesting than one that worked. What matters is that you can
-     tell.
-
-     Milestone 4. -->
+I think it helped. Question 5 was now testable but also did not make it a guaranteed win every single time. I think Seeing question 4 fail consistently on this one made me double down on the need to add the testing for the 5th criteria. Because in this thread there are multiple answers about which lot is best and why, but just expanding the expects in the question would not allow the RAG system to work dynamically. Because ideally you would want this to work and always give the best answer. Even if the best lot to park changes. For example east lot could be best this year. But then South Lot expands to be closer and becomes better the next year. So instead of hard coding an answer allowing the votes to change the answer would allow for this context. Whereas in other ones where I did change the questions.py I did so because the expects was too narrow. 
 
 ## What's Still Broken
 
-<!-- For each criterion still missed after your fix: what you'd do about it,
-     and why you stopped where you did.
-
-     "I ran out of time" is fine if it's true. Pretending nothing is left is
-     not.
-
-     Milestone 5. -->
+The last criteria is still broken but like I mentioned above I think it is still one I want to have I just need to update run_eval.py to test for it so that we can see how it actually performs and if it helps. But I did not have the time to make that test this time. 
 
 ## What I'd Do Differently
 
-<!-- Knowing what you know now — which of your five criteria would you write
-     differently, and why?
-
-     Milestone 5. -->
+I think I would write 5 differently and 4 differently. I think 4 is too broad and really just expands on what 3 already looks for. Maybe I will add a sixth one to make up for the lack of diversity in my criteria. 

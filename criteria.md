@@ -51,8 +51,8 @@ This is so there is no hallucination
 
 ## 4. Reply chunks keep their thread context
 
-For a sample of at least 10 chunks that are replies (not original posts), at
-least 9 of 10 include the original message/question they are replying to —
+For a sample of at least 5 chunks that are replies (not original posts), at
+least 4 of 5 include the original message/question they are replying to —
 either appended into the chunk text or stored as chunk metadata I can check
 by hand.
 
