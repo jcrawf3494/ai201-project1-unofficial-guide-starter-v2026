@@ -142,7 +142,7 @@ Stretch Features
 |---|---|---|---|---|---|
 | 1. Retrieved chunk contains the answer | 4/5 | 3/5 | 4/5 | MISSED |
 | 2. Every answer names a source | 5/5 | 5/5 | 5/5 |  MET |
-| 3. Gate stops out-of-corpus questions | 5/  | 5/5 | 5/5 |  MET |
+| 3. Gate stops out-of-corpus questions | 5/5 | 5/5 | 5/5 |  MET |
 
 
 
@@ -173,29 +173,19 @@ Bikes are useful because they can cut an 18-minute walk down to about 6 minutes,
 
 | # | Criterion | Verdict | How I decided |
 |---|---|---|---|
-| 1 |  |  |  |
-| 2 |  |  |  |
-| 3 |  |  |  |
-| 4 |  |  |  |
-| 5 |  |  |  |
+| 1. Retrieved chunk contains the answer | 4/5 | 3/5 | 4/5 | MISSED | The ones that failed did not have a chunk that contained the corrected answer
+| 2. Every answer names a source | 5/5 | 5/5 | 5/5 |  MET | Event if the answer was incorrect it named a source
+| 3. Gate stops out-of-corpus questions | 5/5 | 5/5 | 5/5 |  MET | None of the out of corpus questions passed. 
+| 4. Reply chunks keep their thread context| 5/5 |5/5|5/5|  MET |Because even if the answer was incorrect they still pulled from the same thread
+| 5. Conflicts defer to vote count, but get flagged | 0/5 |0/5  |0/5 |Missed| Not a way to judge this right now. They technically could have passed as well because there were no issues with this but I wanted to keep this as fail so this could be built in later to flag for this as I think it will be a really useful diagnosis tool 
 
 ## Diagnoses
 
 <!-- For each miss: which stage caused it, and how. The stage alone isn't
-     enough — you need the mechanism.
+  Most of my misses were from criteria Retrieved chunks contain the answer
+  Specifically for question 1 and 5. These failures did not come because the answers were necessarily incorrect but rather because I was too general in the expects portion of the questions.py. If that was updated the answers to these questions would be a pass as they did give relevant answers based on the provided text
 
-     Not a diagnosis: "Question 3 didn't work."
-     A diagnosis:     "Question 3 asks about laundry costs. The answer is in
-                       one sentence that got split across two chunks, so
-                       neither chunk on its own contains it."
-
-     The five stages: loading → chunking → embedding → retrieval → generation.
-
-     Look for a pattern. If three misses all ask about numbers, that's one
-     problem, not three.
-
-     Missed nothing? Say so, then say honestly whether your targets were set
-     low, and which one you'd tighten and to what.
+  The last criteria that was missed was Conflicts defer to vote count, but get flagged and that was for all the questions. That is because this was not built in to the testing. But I plan to build this in the testing, as I think it would be important not to raise. Especially as the Rag system starts to grow. Or if you were using this on a larger platform with more conflicting answers like on reddit. 
 
      Milestone 3. -->
 

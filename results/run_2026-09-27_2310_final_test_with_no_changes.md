@@ -13,10 +13,10 @@ of your questions had the answer in the retrieved chunks, and so on.
 
 | Question | Run 1 | Run 2 | Run 3 |
 |---|---|---|---|
-| Are bikes a good idea on campus? | pass | fail | pass |
-| Can I submit work late? | pass | pass | pass |
-| Best quiet place to study? | pass | pass | pass |
-| What is the best parking spot or area? | pass | pass | pass |
+| Are bikes a good idea on campus?                | pass | fail | pass |
+| Can I submit work late?                         | pass | pass | pass |
+| Best quiet place to study?                      | pass | pass | pass |
+| What is the best parking spot or area?          | pass | pass | pass |
 | Where can I find information about internships? | fail | fail | fail |
 
 ---
