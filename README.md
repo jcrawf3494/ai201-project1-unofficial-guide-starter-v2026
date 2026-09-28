@@ -185,6 +185,8 @@ Bikes are useful because they can cut an 18-minute walk down to about 6 minutes,
   Most of my misses were from criteria Retrieved chunks contain the answer
   Specifically for question 1 and 5. These failures did not come because the answers were necessarily incorrect but rather because I was too general in the expects portion of the questions.py. If that was updated the answers to these questions would be a pass as they did give relevant answers based on the provided text
 
+  So I would say this comes from retrieval in the pipeline 
+
   Example 
   Question 1 Run 2 
   Bikes are worth it for cutting down commute times (cutting an 18-minute walk to about 6 minutes), but covered bike parking fills up by 9 am, and winter salt can destroy a drivetrain in one season. *(thread_bike_commute.txt)* This failed because it did not have cheap bike but it did give correct information. 
@@ -210,6 +212,9 @@ I changed the question for 5 to be more relevant as the question I chose was not
  {"question": "Are bikes a good idea on campus?", "expects": "bike"},
 
 {"question": "What is the best time to look for an internship?", "expects": "earlier"},
+
+
+I added hybrid search to help with this function 
 
 **Why I picked it:**
 
@@ -240,3 +245,49 @@ The last criteria is still broken but like I mentioned above I think it is still
 ## What I'd Do Differently
 
 I think I would write 5 differently and 4 differently. I think 4 is too broad and really just expands on what 3 already looks for. Maybe I will add a sixth one to make up for the lack of diversity in my criteria. 
+
+###STRETCH FEATURE ###
+## The Improvement
+
+I still did not change the criteria because I feel like they still were not being tested properly. Partly because I feel like the search and answer generation was too limited. So this I used the suggestions from the text to make the hybrid search. 
+**What I changed:**
+I used AI to add a hybrid search function like suggested in the project plan for this week. 
+
+**Why I picked it:**
+Because the questions were failing while still being relevant because questions.py was limited. 
+
+
+
+     `python run_eval.py --label stretch_features 
+| Question | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|
+| Are bikes a good idea on campus? | pass | pass | pass |
+| Can I submit work late? | pass | pass | pass |
+| Best quiet place to study? | pass | pass | pass |
+| What is the best parking spot or area? | pass | pass | pass |
+| What is the best time to look for an internship? | pass | pass | pass |
+
+
+
+
+
+**Did it help?**
+
+Yes it did. It helped build the context for an answer that is allowed. Whereas before it was super limiting and made it difficult to provide a good test on the criteria. 
+
+| Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
+|---|---|---|---|---|---|
+| 1. Retrieved chunk contains the answer | 4 of 5 |  5/5|5/5|5/5 |Met  |
+| 2. Every answer names a source | 5 of 5 | 5/5 | 5/5| 5/5 | Met  |
+| 3. Gate stops out-of-corpus questions | 4 of 5 | 5/5 | 5/5 | 5/5 | Met  |
+| 4. Reply chunks keep their thread context |4 of 5  |5/5 | 5/5| 5/5| Met
+| 5. Conflicts defer to vote count, but get flagged | 4 of 5| 0|0 |0 | Missed
+
+
+## What's Still Broken
+
+The fifth criteria is still broken. But will still need to be updated 
+
+## What I'd Do Differently
+It looks like it is expensive in its token calls for the generation of the answers.Appended to results\run_log.md
+15 model calls this session, 15010 tokens (13875 in, 1135 out) So I would want to work on that and cut that down for the cost of this model. Especially in a production environment. 

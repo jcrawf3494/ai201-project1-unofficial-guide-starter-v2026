@@ -125,7 +125,7 @@ def print_gap(rows: list[dict], threshold: float):
     print()
     if gap > 0:
         midpoint = worst_in + gap / 2
-        print(f"  Gap: {worst_in:.3f} → {best_out:.3f}  (width {gap:.3f})")
+        print(f"  Gap: {worst_in:.3f} -> {best_out:.3f}  (width {gap:.3f})")
         print(f"  Midpoint of the gap: {midpoint:.3f}")
     else:
         print(

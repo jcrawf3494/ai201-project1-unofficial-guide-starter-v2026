@@ -254,11 +254,17 @@ def generate(prompt: str, system: str | None = None, cache: bool = True) -> str:
                 or "resource" in message and "exhaust" in message
                 or "rate" in message and "limit" in message
             )
-            if not rate_limited:
+            # 503s are the service being transiently down rather than you
+            # going too fast, but they're just as worth backing off and
+            # retrying — a previous cohort saw these clear up within a
+            # handful of seconds.
+            service_unavailable = "503" in message or "unavailable" in message
+            if not (rate_limited or service_unavailable):
                 raise
             backoff = 2 ** attempt
+            reason = "rate limit" if rate_limited else "service unavailable"
             print(
-                f"  [rate limit] service pushed back. Retrying in {backoff}s "
+                f"  [{reason}] service pushed back. Retrying in {backoff}s "
                 f"(attempt {attempt + 1} of {config.MAX_RETRIES}).",
                 file=sys.stderr,
                 flush=True,

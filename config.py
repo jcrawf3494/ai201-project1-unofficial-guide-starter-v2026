@@ -45,6 +45,17 @@ TOP_K = 5               # how many chunks to pull back per question
 # Most corpora land somewhere between 0.45 and 0.75.
 THRESHOLD = 0.625
 
+# Hybrid search (unit 2): how many candidates the embedding search and the
+# BM25 keyword search each contribute before they're fused and cut down to
+# TOP_K. Wider than TOP_K on purpose, so a chunk that's merely decent by one
+# method but strong by the other still has room to be pulled in.
+HYBRID_CANDIDATES = 20
+
+# The damping constant in Reciprocal Rank Fusion: 1 / (RRF_K + rank). 60 is
+# the standard value from the original RRF paper and rarely needs changing —
+# it just keeps a single method's rank-1 hit from completely dominating.
+RRF_K = 60
+
 
 # ─── Models ──────────────────────────────────────────────────────────────────
 # Embeddings run on your own machine and cost no API quota.

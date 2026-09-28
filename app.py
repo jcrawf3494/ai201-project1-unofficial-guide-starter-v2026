@@ -161,11 +161,11 @@ def cmd_retrieve(args):
         return
 
     print(f"\nQuestion: {args.question}\n")
-    print(f"{'#':<3} {'distance':<10} {'source':<32} preview")
-    print("-" * 100)
+    print(f"{'#':<3} {'distance':<10} {'matched_by':<10} {'source':<32} preview")
+    print("-" * 110)
     for i, r in enumerate(results, 1):
         preview = r.text[:52].replace("\n", " ")
-        print(f"{i:<3} {r.distance:<10.4f} {r.source:<32} {preview}...")
+        print(f"{i:<3} {r.distance:<10.4f} {r.matched_by:<10} {r.source:<32} {preview}...")
 
     decision = gate.check(results)
     print(f"\nGate: {decision.explanation}")

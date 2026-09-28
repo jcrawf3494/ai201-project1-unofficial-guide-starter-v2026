@@ -97,10 +97,11 @@ def main():
         print("You'll build scorer.py in class in unit 2.\n")
 
     if args.runs < 3:
-        print(f"⚠️  {args.runs} run(s). The submission asks for three.\n")
+        print(f"Warning: {args.runs} run(s). The submission asks for three.\n")
 
     transcript = []
     rows = []
+    stopped_early: Exception | None = None
 
     for item in items:
         question = item["question"]
@@ -108,35 +109,59 @@ def main():
         print(f"\n{question}")
 
         run_results = []
-        for run in range(1, args.runs + 1):
-            answer, results, decision = run_once(
-                question, top_k, threshold, corpus, args.variant
-            )
-            passed = judge(question, expects, answer, results) if judge else None
-            run_results.append(passed)
+        try:
+            for run in range(1, args.runs + 1):
+                answer, results, decision = run_once(
+                    question, top_k, threshold, corpus, args.variant
+                )
+                passed = judge(question, expects, answer, results) if judge else None
+                run_results.append(passed)
 
-            mark = {True: "pass", False: "fail", None: "—"}[passed]
-            print(f"  run {run}: {mark}  (best distance {decision.best_distance:.3f})")
+                mark = {True: "pass", False: "fail", None: "—"}[passed]
+                print(f"  run {run}: {mark}  (best distance {decision.best_distance:.3f})")
 
-            transcript.append(
-                {
-                    "question": question,
-                    "run": run,
-                    "answer": answer,
-                    "sources": sorted({r.source for r in results}),
-                    "best_distance": decision.best_distance,
-                    "gate_passed": decision.passed,
-                }
-            )
+                transcript.append(
+                    {
+                        "question": question,
+                        "run": run,
+                        "answer": answer,
+                        "sources": sorted({r.source for r in results}),
+                        "best_distance": decision.best_distance,
+                        "gate_passed": decision.passed,
+                    }
+                )
+        except Exception as exc:  # noqa: BLE001 — surfaced in the report below
+            stopped_early = exc
+            print(f"  stopped early: {exc}", file=sys.stderr)
 
         rows.append({"question": question, "expects": expects, "runs": run_results})
 
-    gate_rows = check_out_of_scope(top_k, threshold, corpus, args.variant)
+        if stopped_early is not None:
+            break
+
+    # Retrieval-only, no API calls — safe to run even after a mid-eval crash,
+    # and cheap enough that partial credit for it costs nothing.
+    try:
+        gate_rows = check_out_of_scope(top_k, threshold, corpus, args.variant)
+    except Exception as exc:
+        print(f"Could not run the out-of-scope check either: {exc}", file=sys.stderr)
+        gate_rows = []
 
     write_report(
         rows, transcript, gate_rows, args, corpus, top_k, threshold,
         scored=judge is not None,
+        stopped_early=stopped_early,
     )
+
+    if stopped_early is not None:
+        print(
+            f"\nStopped early after: {stopped_early}\n"
+            "The report just written only covers what finished before that — "
+            "rerun once the underlying issue (often a transient outage or a "
+            "rate limit) has cleared.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
 
 def check_out_of_scope(top_k, threshold, corpus, variant):
@@ -176,19 +201,33 @@ def check_out_of_scope(top_k, threshold, corpus, variant):
     return rows
 
 
-def write_report(rows, transcript, gate_rows, args, corpus, top_k, threshold, scored):
+def write_report(
+    rows, transcript, gate_rows, args, corpus, top_k, threshold, scored,
+    stopped_early=None,
+):
     config.RESULTS_DIR.mkdir(exist_ok=True)
     stamp = dt.datetime.now().strftime("%Y-%m-%d_%H%M")
     label = f"_{args.label}" if args.label else ""
     path = config.RESULTS_DIR / f"run_{stamp}{label}.md"
 
-    n = len(rows[0]["runs"]) if rows else 0
+    # A row cut short by `stopped_early` can have fewer runs than the rest —
+    # take the widest row so the table header covers every column any row uses.
+    n = max((len(row["runs"]) for row in rows), default=0)
     run_headers = " | ".join(f"Run {i}" for i in range(1, n + 1))
     run_divider = "|".join(["---"] * n)
 
     lines = [
         f"# Run log{f' — {args.label}' if args.label else ''}",
         "",
+    ]
+    if stopped_early is not None:
+        lines += [
+            f"> ⚠️ **This run stopped early**: {stopped_early}",
+            "> Everything below finished before that; anything after the last",
+            "> question shown did not run.",
+            "",
+        ]
+    lines += [
         f"- Produced by: `run_eval.py::main`",
         f"- Retrieval: `store.py::search`, chunks from `chunker.py::split_documents`",
         f"- Corpus: `{corpus}` (index variant `{args.variant}`)",

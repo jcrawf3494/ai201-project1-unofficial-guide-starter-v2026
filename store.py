@@ -17,7 +17,9 @@ rest of the project if they were wrong:
    install needs neither PyTorch nor a reachable Hugging Face. See `_embedder`.
 """
 
+import math
 import os
+import re
 import shutil
 from dataclasses import dataclass
 
@@ -28,6 +30,7 @@ from dataclasses import dataclass
 os.environ.setdefault("ANONYMIZED_TELEMETRY", "False")
 
 import chromadb  # noqa: E402
+from rank_bm25 import BM25Okapi  # noqa: E402
 
 import config
 from chunker import Chunk
@@ -42,6 +45,7 @@ class Result:
     label: str
     distance: float   # LOWER IS BETTER. 0.3 is close, 0.9 is unrelated.
     produced_by: str
+    matched_by: str = ""   # "embedding", "bm25", or "both" — set by search()
 
 
 _model = None
@@ -134,6 +138,48 @@ def _client():
     )
 
 
+def _tokenize(text: str) -> list[str]:
+    """Lowercase word tokens. Good enough for BM25 — no stemming, no stopwords."""
+    return re.findall(r"\w+", text.lower())
+
+
+# Keyed by collection name. Each entry is (BM25Okapi, ids, docs, metadatas),
+# with the three lists index-aligned with each other and with the corpus the
+# BM25Okapi instance was built from.
+_bm25_cache: dict[str, tuple] = {}
+
+
+def _bm25_index(collection):
+    """Get or build the BM25 index for a collection, from its own documents.
+
+    Built lazily from whatever is already in Chroma, so it always matches
+    what `build_index` last stored — nothing new to keep in sync by hand.
+    """
+    name = collection.name
+    if name in _bm25_cache:
+        return _bm25_cache[name]
+
+    stored = collection.get(include=["documents", "metadatas"])
+    ids = stored["ids"]
+    docs = stored["documents"]
+    metadatas = stored["metadatas"]
+    bm25 = BM25Okapi([_tokenize(doc) for doc in docs])
+
+    entry = (bm25, ids, docs, metadatas)
+    _bm25_cache[name] = entry
+    return entry
+
+
+def _cosine_distance(a: list[float], b: list[float]) -> float:
+    """1 - cosine similarity, matching Chroma's `hnsw:space: cosine` collections."""
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(y * y for y in b))
+    if norm_a == 0 or norm_b == 0:
+        return 1.0
+    return 1.0 - dot / (norm_a * norm_b)
+
+
 def build_index(
     chunks: list[Chunk],
     corpus: str | None = None,
@@ -154,6 +200,8 @@ def build_index(
         client.delete_collection(name)
     except Exception:
         pass
+
+    _bm25_cache.pop(name, None)
 
     collection = client.create_collection(
         name=name,
@@ -185,9 +233,21 @@ def search(
     variant: str = "default",
 ) -> list[Result]:
     """
-    Retrieve the chunks closest in meaning to a question.
+    Retrieve the chunks closest to a question by meaning (embeddings) and by
+    keyword (BM25), then combine the two with Reciprocal Rank Fusion.
 
-    Returns them nearest-first, each with its distance.
+    RRF combines by *rank*, not raw score, so it needs no rescaling between
+    cosine distance (lower is better) and BM25 score (higher is better, no
+    fixed range). Each method contributes up to `config.HYBRID_CANDIDATES`
+    candidates; a chunk's fused score is the sum of `1 / (RRF_K + rank)`
+    across whichever method(s) surfaced it.
+
+    Every returned `Result.distance` is still a real cosine distance (see the
+    module docstring) — for a chunk that only came in via BM25, it's computed
+    on the spot against its stored embedding — so `gate.py`'s threshold keeps
+    meaning exactly what it always has.
+
+    Returns the fused top `top_k`, best first.
     """
     top_k = top_k or config.TOP_K
     name = config.collection_name(corpus, variant)
@@ -199,22 +259,74 @@ def search(
             f"No index called '{name}'. Run `python app.py index` first."
         ) from exc
 
+    count = collection.count()
+    if count == 0:
+        return []
+
+    candidate_k = min(max(top_k, config.HYBRID_CANDIDATES), count)
+
+    query_embedding = embed([question])[0]
     raw = collection.query(
-        query_embeddings=embed([question]),
-        n_results=min(top_k, collection.count()),
+        query_embeddings=[query_embedding],
+        n_results=candidate_k,
     )
+    embed_ids = raw["ids"][0]
+    embed_rank = {cid: i + 1 for i, cid in enumerate(embed_ids)}
+    embed_distance = dict(zip(embed_ids, raw["distances"][0]))
+
+    bm25, all_ids, all_docs, all_metas = _bm25_index(collection)
+    doc_by_id = dict(zip(all_ids, all_docs))
+    meta_by_id = dict(zip(all_ids, all_metas))
+
+    scores = bm25.get_scores(_tokenize(question))
+    bm25_ranked = sorted(zip(all_ids, scores), key=lambda pair: pair[1], reverse=True)
+    bm25_candidates = [cid for cid, score in bm25_ranked if score > 0][:candidate_k]
+    bm25_rank = {cid: i + 1 for i, cid in enumerate(bm25_candidates)}
+
+    fused: dict[str, float] = {}
+    for cid in set(embed_rank) | set(bm25_rank):
+        score = 0.0
+        if cid in embed_rank:
+            score += 1.0 / (config.RRF_K + embed_rank[cid])
+        if cid in bm25_rank:
+            score += 1.0 / (config.RRF_K + bm25_rank[cid])
+        fused[cid] = score
+
+    final_ids = sorted(fused, key=lambda cid: fused[cid], reverse=True)[:top_k]
+
+    # Gate safety net: keep the single nearest-embedding chunk in the final
+    # set even if BM25 pushed it out of the fused top_k, so the relevance
+    # gate's "how close is the closest chunk" check never gets worse than it
+    # is with embeddings alone.
+    if embed_ids and embed_ids[0] not in final_ids and final_ids:
+        final_ids[-1] = embed_ids[0]
+
+    missing_embeddings = [cid for cid in final_ids if cid not in embed_distance]
+    fetched_embeddings = {}
+    if missing_embeddings:
+        fetched = collection.get(ids=missing_embeddings, include=["embeddings"])
+        fetched_embeddings = dict(zip(fetched["ids"], fetched["embeddings"]))
 
     results: list[Result] = []
-    for text, meta, distance in zip(
-        raw["documents"][0], raw["metadatas"][0], raw["distances"][0]
-    ):
+    for cid in final_ids:
+        if cid in embed_distance:
+            distance = float(embed_distance[cid])
+        else:
+            distance = _cosine_distance(query_embedding, fetched_embeddings[cid])
+
+        in_embed = cid in embed_rank
+        in_bm25 = cid in bm25_rank
+        matched_by = "both" if in_embed and in_bm25 else ("embedding" if in_embed else "bm25")
+
+        meta = meta_by_id.get(cid, {})
         results.append(
             Result(
-                text=text,
+                text=doc_by_id.get(cid, ""),
                 source=str(meta.get("source", "unknown")),
                 label=f"{meta.get('source', 'unknown')}#{meta.get('index', 0)}",
-                distance=float(distance),
+                distance=distance,
                 produced_by=str(meta.get("produced_by", "unknown")),
+                matched_by=matched_by,
             )
         )
     return results
