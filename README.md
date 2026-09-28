@@ -145,46 +145,20 @@ Stretch Features
 | 3. Gate stops out-of-corpus questions | 5/  | 5/5 | 5/5 |  MET |
 
 
-Source: `results/run_2026-09-23_1859_first_iteration.md`, produced by
-`run_eval.py::main` with `scorer.py::judge`. Corpus `advice_threads`,
-top-k 5, relevance cutoff 0.625, 3 runs/question, caching off.
 
-Criteria 1 and 2 come from the per-question pass/fail table in that file:
-`judge()` marks a question "pass" only when the answer both contains the
-`expects` phrase from `questions.py` *and* cites one of the retrieved
-sources, so a fail can come from either half. For these five questions
-every one of the 15 answers cited a source (see the "Real output" section
-of the file), so every miss below is criterion 1, not criterion 2:
-
-- *Are bikes a good idea on campus?* (expects "cheap bike") failed all 3
-  runs — the answers talk about registering bikes for free and drivetrain
-  damage, but never say "cheap bike."
-- *Where can I find information about internships?* (expects "career
-  center") failed all 3 runs — the corpus itself only ever says "careers
-  office," never "career center" (confirmed with `grep` over
-  `corpora/advice_threads/documents/`), so this is a real, consistent miss
-  and not scorer noise.
-- *What is the best parking spot or area?* (expects "east lot") failed run
-  1 but passed runs 2–3, an example of the same retrieval producing an
-  answer that mentions the east lot in some generations and not others.
-
-Criterion 3 is unanimous and unchanging across runs because
-`check_out_of_scope` is one deterministic pass, not three: all 5
-out-of-corpus questions were refused, with best distances (0.787–0.930)
-comfortably above the 0.625 cutoff.
-
-Criteria 4 and 5 aren't things `run_eval.py`/`scorer.py` check at all —
-there's no automated test for "is this chunk tagged with its source
-thread" or "does a conflicting-answer case defer to the higher vote
-count" (the corpus does carry per-reply vote counts, e.g.
-`thread_late_work.txt`'s replies are marked "(20 votes)", "(47 votes)",
-etc., but nothing in `generate.py` currently reads or uses them). Those
-two rows need your own manual read of the transcripts, or a stretch
-feature, before they can get a real target and count.
 
 <!-- Underneath, paste the REAL output for each criterion from one of your
      runs — the actual text your system produced, not a description of it.
      Name the file and function that produced it. -->
+
+### Are bikes a good idea on campus? — run 1
+produced by run_eval.py [text](results/run_2026-09-27_2310_final_test_with_no_changes.md)
+
+- Best distance: 0.3857 (passed the gate)
+- Sources retrieved: thread_bike_commute.txt, thread_commuting.txt, thread_first_gen.txt, thread_laptop_specs.txt, thread_study_spots.txt
+
+```
+Bikes are useful because they can cut an 18-minute walk down to about 6 minutes, but they also have downsides, such as full covered parking by 9 AM and drivetrains being destroyed by salt between November and March (thread_bike_commute.txt). One person notes they keep a cheap bike for autumn and walk the rest of the year, while another sold theirs due to icy or salted paths (thread_bike_commute.txt).
 
 ## Verdicts
 
