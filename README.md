@@ -140,11 +140,47 @@ Stretch Features
 
 | Criterion | Target | Run 1 | Run 2 | Run 3 | Verdict |
 |---|---|---|---|---|---|
-| 1. Retrieved chunk contains the answer | 4 of 5 |  |  |  |  |
-| 2. Every answer names a source | 5 of 5 |  |  |  |  |
-| 3. Gate stops out-of-corpus questions | 4 of 5 |  |  |  |  |
-| 4. | | | | | |
-| 5. | | | | | |
+| 1. Retrieved chunk contains the answer | 4/5 | 3/5 | 4/5 | MISSED |
+| 2. Every answer names a source | 5/5 | 5/5 | 5/5 |  MET |
+| 3. Gate stops out-of-corpus questions | 5/  | 5/5 | 5/5 |  MET |
+
+
+Source: `results/run_2026-09-23_1859_first_iteration.md`, produced by
+`run_eval.py::main` with `scorer.py::judge`. Corpus `advice_threads`,
+top-k 5, relevance cutoff 0.625, 3 runs/question, caching off.
+
+Criteria 1 and 2 come from the per-question pass/fail table in that file:
+`judge()` marks a question "pass" only when the answer both contains the
+`expects` phrase from `questions.py` *and* cites one of the retrieved
+sources, so a fail can come from either half. For these five questions
+every one of the 15 answers cited a source (see the "Real output" section
+of the file), so every miss below is criterion 1, not criterion 2:
+
+- *Are bikes a good idea on campus?* (expects "cheap bike") failed all 3
+  runs — the answers talk about registering bikes for free and drivetrain
+  damage, but never say "cheap bike."
+- *Where can I find information about internships?* (expects "career
+  center") failed all 3 runs — the corpus itself only ever says "careers
+  office," never "career center" (confirmed with `grep` over
+  `corpora/advice_threads/documents/`), so this is a real, consistent miss
+  and not scorer noise.
+- *What is the best parking spot or area?* (expects "east lot") failed run
+  1 but passed runs 2–3, an example of the same retrieval producing an
+  answer that mentions the east lot in some generations and not others.
+
+Criterion 3 is unanimous and unchanging across runs because
+`check_out_of_scope` is one deterministic pass, not three: all 5
+out-of-corpus questions were refused, with best distances (0.787–0.930)
+comfortably above the 0.625 cutoff.
+
+Criteria 4 and 5 aren't things `run_eval.py`/`scorer.py` check at all —
+there's no automated test for "is this chunk tagged with its source
+thread" or "does a conflicting-answer case defer to the higher vote
+count" (the corpus does carry per-reply vote counts, e.g.
+`thread_late_work.txt`'s replies are marked "(20 votes)", "(47 votes)",
+etc., but nothing in `generate.py` currently reads or uses them). Those
+two rows need your own manual read of the transcripts, or a stretch
+feature, before they can get a real target and count.
 
 <!-- Underneath, paste the REAL output for each criterion from one of your
      runs — the actual text your system produced, not a description of it.

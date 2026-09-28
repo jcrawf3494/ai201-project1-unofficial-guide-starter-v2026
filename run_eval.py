@@ -261,13 +261,36 @@ def write_report(rows, transcript, gate_rows, args, corpus, top_k, threshold, sc
             "",
         ]
 
-    path.write_text("\n".join(lines), encoding="utf-8")
+    report = "\n".join(lines)
+    path.write_text(report, encoding="utf-8")
+    append_to_log(report, args)
 
     import generate as gen
 
     print(f"\nWrote {path.relative_to(config.ROOT)}")
+    print(f"Appended to {(config.RESULTS_DIR / 'run_log.md').relative_to(config.ROOT)}")
     print(gen.usage())
     print("\nCommit this file. It's the evidence the run actually happened.")
+
+
+def append_to_log(report: str, args) -> None:
+    """Add this run's report to results/run_log.md instead of replacing it.
+
+    The per-run file above is one snapshot. This one is the whole history —
+    every call to run_eval.py adds a new dated section underneath whatever
+    was already there, so past runs stay readable instead of being lost to
+    the next timestamped file.
+    """
+    log_path = config.RESULTS_DIR / "run_log.md"
+    heading = f"# Run — {dt.datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    if args.label:
+        heading += f" ({args.label})"
+
+    entry = f"{heading}\n\n{report}\n"
+    prefix = "\n---\n\n" if log_path.exists() else ""
+
+    with log_path.open("a", encoding="utf-8") as f:
+        f.write(prefix + entry)
 
 
 if __name__ == "__main__":
