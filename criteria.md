@@ -49,28 +49,35 @@ This is so there is no hallucination
 
 ---
 
-## 4. Something about your chunks
-The context needs to be associated with every chunck. so make sure to attach the thread it is replied to. 
+## 4. Reply chunks keep their thread context
 
-
-
-
+For a sample of at least 10 chunks that are replies (not original posts), at
+least 9 of 10 include the original message/question they are replying to —
+either appended into the chunk text or stored as chunk metadata I can check
+by hand.
 
 **Why this target:**
-This target is done because if the chunks are not associate the model could confuse the context and give an incorrect answer. For example talking about late work and being late for registration could cause two different answers. But the model could find late in both of the responses 
+If a reply chunk is stored without the message it's replying to, the model
+loses the context that disambiguates it — e.g. "late" could mean late work or
+late registration, and both would retrieve on the same keyword. 9/10 leaves
+room for one edge case (like a root post with no parent) without failing the
+criterion outright.
 
 
 ---
 
-## 5. Your choice
+## 5. Conflicts defer to vote count, but get flagged
 
-If there is a conflicting answer. For example one says it is okay to submit late work and one answer says it is not okay to submit late work give precedence to the one with a higher vote count. But mention that there is a conflicting answer with a lower count. 
-
-
-
-
+For at least 4 of 5 test questions where my corpus has two conflicting
+answers (e.g., one post says late work is okay, another says it isn't), the
+system's answer (a) matches the source with the higher vote count, and (b)
+explicitly states that a conflicting, lower-voted answer exists.
 **Why this target:**
-This is important because most of these answers are submitted by students and some classes or students have different thoughts or opinions. So the one with the most votes should be the one that is most correct, but it still is worth a mention to say the other one. 
+These answers are student-submitted, and votes are the best proxy I have for
+which one the class actually trusts, so the higher-voted answer should win by
+default. Still mentioning the lower-voted one matters because vote count
+isn't the same as correctness — 4/5 matches the same tolerance I used for the
+other criteria.
 
 
 ---
