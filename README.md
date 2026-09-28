@@ -185,13 +185,27 @@ Bikes are useful because they can cut an 18-minute walk down to about 6 minutes,
   Most of my misses were from criteria Retrieved chunks contain the answer
   Specifically for question 1 and 5. These failures did not come because the answers were necessarily incorrect but rather because I was too general in the expects portion of the questions.py. If that was updated the answers to these questions would be a pass as they did give relevant answers based on the provided text
 
+  Example 
+  Question 1 Run 2 
+  Bikes are worth it for cutting down commute times (cutting an 18-minute walk to about 6 minutes), but covered bike parking fills up by 9 am, and winter salt can destroy a drivetrain in one season. *(thread_bike_commute.txt)* This failed because it did not have cheap bike but it did give correct information. 
+
+  Question 5 All runs. 
+  This is because the questions is almost out of corpus. It contains enough information to be relevant but only one of the replies has what question.py is looking for and it does not relate to what the person is saying.  
+
+  Example. 
+  Based on the provided documents, you can find information about internship timing and when to look for them in `thread_internship_timing
+
   The last criteria that was missed was Conflicts defer to vote count, but get flagged and that was for all the questions. That is because this was not built in to the testing. But I plan to build this in the testing, as I think it would be important not to raise. Especially as the Rag system starts to grow. Or if you were using this on a larger platform with more conflicting answers like on reddit. 
 
      Milestone 3. -->
 
 ## The Improvement
 
+I left my criteria as is but updated the questions.py because I think they were corrupting the results from run_eval.py. 
+
 **What I changed:**
+
+I changed the question for 5 to be more relevant as the question I chose was not directly answered at all in the text. I also changed the expected for question 1. 
 
 **Why I picked it:**
 

@@ -80,6 +80,9 @@ isn't the same as correctness — 4/5 matches the same tolerance I used for the
 other criteria.
 
 
+**NOTES FOR REVISION** This criteria failed not because it is invalid but because there is not testing in place for it. So I will add this later on and then retest. But I still want this to be a criteria because I believe that it will be important to measure. Plus, technically because there is no way to test for it or to do this all of the questions would pass right now. But Like i mentioned I want to add this feature. 
+
+
 ---
 
 <!-- ─────────────────────────────────────────────────────────────────────────
